@@ -17,3 +17,7 @@ torch
 tqdm
 transformers
 wandb
+optimum
+bitsandbytes
+scikit-learn
+accelerate 
