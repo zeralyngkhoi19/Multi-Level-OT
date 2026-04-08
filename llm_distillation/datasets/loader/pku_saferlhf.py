@@ -5,7 +5,7 @@ from datasets import load_from_disk
 TRAIN_PATH = "./llm_distillation/datasets/hf/processed/pku_saferlhf/train"
 TEST_PATH  = "./llm_distillation/datasets/hf/processed/pku_saferlhf/test"
 
-def get_custom_dataset(dataset_config, tokenizer, split):
+def get_split(dataset_config, tokenizer, split):
     path = TRAIN_PATH if split == "train" else TEST_PATH
     raw  = load_from_disk(path)
     max_len = getattr(dataset_config, "max_words", 1024)
@@ -33,4 +33,4 @@ def get_custom_dataset(dataset_config, tokenizer, split):
     )
 
 # alias expected by data_utils.py
-get_split = get_custom_dataset
+# get_split = get_custom_dataset
