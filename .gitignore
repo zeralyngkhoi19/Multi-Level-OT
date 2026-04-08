@@ -15,7 +15,7 @@ wandb/
 *.tmp
 
 # ── HF / datasets (optional) ───────────
-llm_distillation/datasets/hf/processed/
+llm_distillation/datasets/hf/processed/pku_saferlhf
 
 # ── Mac / system ───────────────────────
 .DS_Store

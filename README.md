@@ -1,6 +1,9 @@
 # Multi-Level Optimal Transport for Universal Cross-Tokenizer Knowledge Distillation on Language Models
 The paper has been accepted as AAAI 2025 oral.
 
+```
+pip install -r requirements
+```
 ## Download Pre-trained Teacher Models
 
 Teacher models can be downloaded from Hugging Face. And then you can download them in :
