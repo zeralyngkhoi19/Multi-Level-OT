@@ -21,3 +21,5 @@ optimum
 bitsandbytes
 scikit-learn
 accelerate 
+peft
+trl
