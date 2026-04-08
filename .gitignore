@@ -1,0 +1,21 @@
+# ── Python ─────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ── Jupyter ────────────────────────────
+.ipynb_checkpoints/
+
+# ── W&B ───────────────────────────────
+wandb/
+
+# ── Data / outputs ─────────────────────
+*.log
+*.tmp
+
+# ── HF / datasets (optional) ───────────
+llm_distillation/datasets/hf/processed/
+
+# ── Mac / system ───────────────────────
+.DS_Store

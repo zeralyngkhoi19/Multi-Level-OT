@@ -7,7 +7,7 @@ from policies import apply_fsdp_checkpointing
 from models.fsdp import fsdp_auto_wrap_policy
 from configs import fsdp_config as FSDP_CONFIG
 from models.distillation_model import DistillationModel
-from optimum.bettertransformer import BetterTransformer
+# from optimum.bettertransformer import BetterTransformer
 from transformers import AutoModelForCausalLM, MT5ForConditionalGeneration, AutoTokenizer
 from configs.configs_utils import generate_peft_config, update_config
 from peft import get_peft_model, prepare_model_for_kbit_training
@@ -16,7 +16,7 @@ from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXLayer
 from transformers.models.mistral.modeling_mistral import MistralDecoderLayer
 from transformers.models.falcon.modeling_falcon import FalconDecoderLayer
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
-
+from transformers import BitsAndBytesConfig
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
 )
@@ -34,61 +34,126 @@ def load_tokenizer(name, encoder_decoder):
     if not encoder_decoder:
         tokenizer.pad_token_id = tokenizer.eos_token_id
     return tokenizer
-
+    
 def load_model(train_config, rank):
     use_cache = False if train_config.enable_fsdp else True
     def load():
         if "mt0" in train_config.model_name:
-            return MT5ForConditionalGeneration.from_pretrained(
-                train_config.model_name,
-                load_in_8bit=True if train_config.quantization else False,
-                device_map="auto" if train_config.quantization else None,
-                use_cache=use_cache,
-            )
+            load_kwargs = dict(use_cache=use_cache)
+            if train_config.quantization:
+                load_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+                load_kwargs["device_map"] = "auto"
+            return MT5ForConditionalGeneration.from_pretrained(train_config.model_name, **load_kwargs)
+
         elif "Qwen" in train_config.model_name:
-            return AutoModelForCausalLM.from_pretrained(
-                train_config.model_name,
-                load_in_8bit=True if train_config.quantization else False,
-                device_map="auto" if train_config.quantization else None,
+            load_kwargs = dict(
                 use_cache=use_cache,
-                fp32=True,
                 trust_remote_code=True,
+                torch_dtype=torch.bfloat16 if getattr(train_config, 'pure_bf16', False) else torch.float32,
             )
+            if train_config.quantization:
+                load_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+                load_kwargs["device_map"] = "auto"
+            return AutoModelForCausalLM.from_pretrained(train_config.model_name, **load_kwargs)
+
+        elif "gemma" in train_config.model_name.lower():
+            load_kwargs = dict(
+                use_cache=use_cache,
+                trust_remote_code=True,
+                torch_dtype=torch.bfloat16 if getattr(train_config, 'pure_bf16', False) else torch.float32,
+            )
+            if train_config.quantization:
+                load_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+                load_kwargs["device_map"] = "auto"
+            return AutoModelForCausalLM.from_pretrained(train_config.model_name, **load_kwargs)
+
         else:
-            return AutoModelForCausalLM.from_pretrained(
-                train_config.model_name,
-                load_in_8bit=True if train_config.quantization else False,
-                device_map="auto" if train_config.quantization else None,
+            load_kwargs = dict(
                 use_cache=use_cache,
                 trust_remote_code=True,
+                torch_dtype=torch.bfloat16 if getattr(train_config, 'pure_bf16', False) else torch.float32,
             )
-    
+            if train_config.quantization:
+                load_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+                load_kwargs["device_map"] = "auto"
+            return AutoModelForCausalLM.from_pretrained(train_config.model_name, **load_kwargs)
+
     if not train_config.enable_fsdp:
         model = load()
-        
+
     elif train_config.enable_fsdp:
         if train_config.low_cpu_fsdp:
             if rank == 0:
                 model = load()
             else:
-                model_config = AutoModelForCausalLM.from_pretrained(
-                    train_config.model_name, fp32=True ,trust_remote_code=True)
-                model_config.use_cache = use_cache
+                cfg = AutoModelForCausalLM.from_pretrained(
+                    train_config.model_name, trust_remote_code=True).config
                 with torch.device("meta"):
-                    model = AutoModelForCausalLM.from_config(model_config, fp32=True  ,trust_remote_code=True)
+                    model = AutoModelForCausalLM.from_config(cfg)
+                model.use_cache = use_cache
         else:
             model = load()
 
         if train_config.use_fast_kernels:
-            """
-            For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
-            using of Flash Attention or Xformer memory-efficient kernels
-            based on the hardware being used. This would speed up fine-tuning.
-            """
-            model = BetterTransformer.transform(model)
-            
+            pass
+
     print_model_size(model, train_config, rank)
     return model
+# def load_model(train_config, rank):
+#     use_cache = False if train_config.enable_fsdp else True
+#     def load():
+#         if "mt0" in train_config.model_name:
+#             return MT5ForConditionalGeneration.from_pretrained(
+#                 train_config.model_name,
+#                 load_in_8bit=True if train_config.quantization else False,
+#                 device_map="auto" if train_config.quantization else None,
+#                 use_cache=use_cache,
+#             )
+#         elif "Qwen" in train_config.model_name:
+#             return AutoModelForCausalLM.from_pretrained(
+#                 train_config.model_name,
+#                 load_in_8bit=True if train_config.quantization else False,
+#                 device_map="auto" if train_config.quantization else None,
+#                 use_cache=use_cache,
+#                 fp32=True,
+#                 trust_remote_code=True,
+#             )
+#         else:
+#             return AutoModelForCausalLM.from_pretrained(
+#                 train_config.model_name,
+#                 load_in_8bit=True if train_config.quantization else False,
+#                 device_map="auto" if train_config.quantization else None,
+#                 use_cache=use_cache,
+#                 trust_remote_code=True,
+#             )
+    
+#     if not train_config.enable_fsdp:
+#         model = load()
+        
+#     elif train_config.enable_fsdp:
+#         if train_config.low_cpu_fsdp:
+#             if rank == 0:
+#                 model = load()
+#             else:
+#                 model_config = AutoModelForCausalLM.from_pretrained(
+#                     train_config.model_name, fp32=True ,trust_remote_code=True)
+#                 model_config.use_cache = use_cache
+#                 with torch.device("meta"):
+#                     model = AutoModelForCausalLM.from_config(model_config, fp32=True  ,trust_remote_code=True)
+#         else:
+#             model = load()
+
+#         if train_config.use_fast_kernels:
+#             """
+#             For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
+#             using of Flash Attention or Xformer memory-efficient kernels
+#             based on the hardware being used. This would speed up fine-tuning.
+#             """
+#             pass
+#             # model = BetterTransformer.transform(model)
+            
+#     print_model_size(model, train_config, rank)
+#     return model
 
 def set_model(model, train_config, fsdp_config, rank, kwargs):
     if train_config.quantization:
