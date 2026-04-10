@@ -33,6 +33,7 @@ def parse_args():
     parser.add_argument("--distillation_config_distil_factor", type=float, default=1.5, help="Distillation factor")
     parser.add_argument("--save_step", type=int, default=100, help="Save step")
     parser.add_argument("--f", type=int, default=1, help="method")
+    parser.add_argument("--use_peft", action="store_true", help="Enable LoRA PEFT on student")
     return parser.parse_args()
 
 def main():

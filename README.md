@@ -4,6 +4,12 @@ The paper has been accepted as AAAI 2025 oral.
 ```
 pip install -r requirements
 ```
+
+## FOR PKU BENCHMARK
+```
+CUDA_VISIBLE_DEVICES=0 python finetuning.py   --model_name "Qwen/Qwen2.5-3B-Instruct"   --dataset.file "./llm_distillation/datasets/loader/pku_saferlhf.py"   --lr 1e-5   --num_epochs 1   --batch_size_training 1   --val_batch_size 1   --save_step 10000   --f 1   --output_dir "./output_pku_distil_peft"   --distillation_config_model_name "meta-llama/Llama-Guard-3-8B"   --distillation   --distillation_config_pure_bf16   --distillation_config_distil_factor 1.5   --use_peft
+```
+
 ## Download Pre-trained Teacher Models
 
 Teacher models can be downloaded from Hugging Face. And then you can download them in :

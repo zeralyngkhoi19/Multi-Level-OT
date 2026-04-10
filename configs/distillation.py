@@ -25,5 +25,5 @@ class distillation_config:
     checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
     fsdp_activation_checkpointing: bool = True
     fsdp_cpu_offload: bool = False
-    pure_bf16: bool = False
+    pure_bf16: bool =True
     optimizer: str = "AdamW"
