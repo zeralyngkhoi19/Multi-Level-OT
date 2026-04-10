@@ -89,6 +89,10 @@ def train(model, train_dataloader, eval_dataloader, optimizer, lr_scheduler, gra
                 with autocast():
                     if train_config.distillation:
                         student_output, teacher_output = model(**batch)
+                         # Guard: skip batches with empty label sequences
+                        if 0 in student_output.logits.shape or 0 in teacher_output.logits.shape:
+                            print(f"Warning: Empty batch at step {step}, skipping.")
+                            continue
                         loss, cross_loss, dist_loss = distillation_loss(epoch, student_output, teacher_output, batch['student_labels'], batch['teacher_labels'], rank=rank)
                     else:
                         loss = model(**batch).loss
