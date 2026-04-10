@@ -7,7 +7,7 @@ class distillation_config:
     model_name: str = "meta-llama/Llama-2-7b-hf"
     enable_fsdp: bool = False
     low_cpu_fsdp: bool = False
-    quantization: bool = False
+    quantization: bool = True
     use_fast_kernels: bool = False
     use_peft: bool = False
     freeze_layers: bool = False
@@ -25,5 +25,5 @@ class distillation_config:
     checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
     fsdp_activation_checkpointing: bool = True
     fsdp_cpu_offload: bool = False
-    pure_bf16: bool =True
+    pure_bf16: bool = False
     optimizer: str = "AdamW"
